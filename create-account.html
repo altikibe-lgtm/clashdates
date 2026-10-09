@@ -1,0 +1,886 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Your Account</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--hot:#FF3D74;--wine:#3B0616;--wine-d:#26040E;--paper:#FFF4F7;--dim:#E7B6C6;--mono:'Space Mono',monospace;--display:'Bricolage Grotesque',system-ui,sans-serif}
+html{scroll-behavior:smooth}
+body{background:var(--wine-d);color:var(--paper);font-family:var(--display);overflow-x:hidden}
+
+/* ORBS */
+.orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);animation:drift ease-in-out infinite}
+.o1{width:400px;height:400px;background:rgba(255,61,116,.2);top:-100px;right:-100px;animation-duration:18s}
+.o2{width:300px;height:300px;background:rgba(180,10,50,.18);bottom:10%;left:-80px;animation-duration:14s;animation-delay:-6s}
+.o3{width:200px;height:200px;background:rgba(255,61,116,.1);top:50%;right:15%;animation-duration:22s;animation-delay:-11s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-40px) scale(1.08)}66%{transform:translate(-20px,25px) scale(0.93)}}
+
+/* HEARTS */
+.hearts{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.heart{position:absolute;bottom:-40px;opacity:0;animation:floatup linear infinite}
+@keyframes floatup{0%{opacity:0;transform:translateY(0) rotate(-10deg)}10%{opacity:.5}85%{opacity:.1}100%{opacity:0;transform:translateY(-110vh) rotate(15deg)}}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;background:rgba(38,4,14,.7);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,244,247,.08)}
+.nav-logo{font-weight:900;font-size:20px;letter-spacing:-.04em;color:var(--paper);display:flex;align-items:center;gap:8px}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:var(--hot);animation:glow 2s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 6px rgba(255,61,116,.5)}50%{box-shadow:0 0 20px rgba(255,61,116,1)}}
+.nav-btn{background:var(--hot);color:var(--paper);border:none;border-radius:999px;padding:10px 22px;font-family:var(--display);font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+
+/* HERO */
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:7rem 1.5rem 4rem;overflow:hidden}
+.hero-inner{max-width:480px;width:100%;text-align:center}
+.hero-chip{display:inline-flex;align-items:center;gap:7px;background:rgba(255,61,116,.12);border:1px solid rgba(255,61,116,.3);border-radius:999px;padding:6px 14px;margin-bottom:1.5rem;font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--hot)}
+.hero-chip-dot{width:6px;height:6px;border-radius:50%;background:var(--hot);animation:glow 2s infinite}
+h1{font-size:clamp(36px,8vw,60px);font-weight:900;letter-spacing:-.04em;line-height:1.05;margin-bottom:1rem;color:var(--paper)}
+h1 em{font-style:normal;color:var(--hot)}
+.hero-sub{font-size:16px;color:var(--dim);line-height:1.7;margin-bottom:2rem;max-width:360px;margin-left:auto;margin-right:auto}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:3rem}
+.btn-primary{background:var(--hot);color:var(--paper);border:none;border-radius:999px;padding:16px 36px;font-family:var(--display);font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;display:inline-block;transition:transform .15s,box-shadow .15s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,61,116,.4)}
+.btn-ghost{background:transparent;color:var(--paper);border:1px solid rgba(255,244,247,.2);border-radius:999px;padding:16px 36px;font-family:var(--display);font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;display:inline-block}
+
+/* PHOTO CARDS */
+.photo-cards{position:relative;display:flex;justify-content:center;gap:16px;margin-top:1rem}
+.photo-card{position:relative;border-radius:24px;overflow:hidden;border:2px solid rgba(255,244,247,.12);box-shadow:0 16px 48px rgba(0,0,0,.5)}
+.photo-card img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-card-info{position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(transparent,rgba(38,4,14,.9));font-weight:700}
+.photo-card-name{font-size:16px;color:var(--paper)}
+.photo-card-dist{font-size:12px;color:var(--dim);font-family:var(--mono)}
+.card-girl{width:160px;height:210px;animation:cardFloat 5s ease-in-out infinite}
+.card-guy{width:140px;height:185px;animation:cardFloat 5s ease-in-out infinite;animation-delay:-2.5s;margin-top:24px}
+@keyframes cardFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.match-badge{position:absolute;top:-12px;right:-12px;background:var(--hot);color:#fff;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;font-family:var(--mono);animation:pop .3s ease;box-shadow:0 4px 16px rgba(255,61,116,.5)}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+
+/* STATS */
+.stats{position:relative;z-index:1;padding:3rem 1.5rem;display:flex;justify-content:center;gap:0;flex-wrap:wrap;border-top:1px solid rgba(255,244,247,.06);border-bottom:1px solid rgba(255,244,247,.06)}
+.stat{text-align:center;padding:1rem 2.5rem;border-right:1px solid rgba(255,244,247,.08)}
+.stat:last-child{border-right:none}
+.stat-val{font-size:28px;font-weight:900;letter-spacing:-.04em;color:var(--hot)}
+.stat-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-top:4px}
+
+/* FEATURES */
+.features{position:relative;z-index:1;padding:4rem 1.5rem;max-width:480px;margin:0 auto}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--hot);text-align:center;margin-bottom:12px}
+.section-title{font-size:28px;font-weight:900;letter-spacing:-.03em;text-align:center;margin-bottom:2.5rem;color:var(--paper)}
+.feat-list{display:flex;flex-direction:column;gap:14px}
+.feat{background:rgba(59,6,22,.6);backdrop-filter:blur(12px);border:1px solid rgba(255,244,247,.08);border-radius:18px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start;transition:transform .2s,border-color .2s}
+.feat:hover{transform:translateY(-3px);border-color:rgba(255,61,116,.3)}
+.feat-icon{width:44px;height:44px;min-width:44px;border-radius:14px;background:rgba(255,61,116,.15);display:flex;align-items:center;justify-content:center;font-size:22px}
+.feat-title{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--paper)}
+.feat-desc{font-size:13px;color:var(--dim);line-height:1.6}
+
+/* TESTIMONIALS */
+.testi-section{position:relative;z-index:1;padding:4rem 1.5rem;max-width:480px;margin:0 auto}
+.testi-cards{display:flex;flex-direction:column;gap:14px}
+.testi{background:rgba(59,6,22,.6);backdrop-filter:blur(12px);border:1px solid rgba(255,244,247,.08);border-radius:18px;padding:18px 20px}
+.testi-text{font-size:14px;color:var(--dim);line-height:1.7;margin-bottom:14px;font-style:italic}
+.testi-author{display:flex;align-items:center;gap:10px}
+.testi-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff}
+.testi-name{font-size:13px;font-weight:700;color:var(--paper)}
+.testi-loc{font-size:11px;color:var(--dim)}
+.stars{font-size:12px;margin-left:auto;letter-spacing:1px}
+
+/* CTA */
+.cta-section{position:relative;z-index:1;padding:4rem 1.5rem 5rem;text-align:center}
+.cta-inner{background:linear-gradient(135deg,rgba(255,61,116,.12),rgba(180,10,50,.08));border:1px solid rgba(255,61,116,.2);border-radius:28px;padding:3rem 2rem;max-width:420px;margin:0 auto}
+.cta-title{font-size:28px;font-weight:900;letter-spacing:-.03em;margin-bottom:10px}
+.cta-sub{font-size:14px;color:var(--dim);margin-bottom:2rem;line-height:1.6}
+
+/* FOOTER */
+footer{position:relative;z-index:1;text-align:center;padding:1.5rem;border-top:1px solid rgba(255,244,247,.06);font-size:12px;color:var(--dim)}
+footer a{color:var(--hot);text-decoration:none}
+
+/* FORM */
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--wine:#3B0616;--wine-d:#26040E;--paper:#FFF4F7;--dim:#E7B6C6;--hot:#FF3D74;--field:#330613;--line:rgba(255,244,247,.16);--mono:'Space Mono',monospace;--display:'Bricolage Grotesque',system-ui,sans-serif;}
+body{background:var(--wine-d);color:var(--paper);font-family:var(--display);min-height:100vh;overflow-x:hidden;}
+.orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);animation:drift linear infinite}
+.orb1{width:320px;height:320px;background:rgba(255,61,116,.2);top:-100px;right:-80px;animation-duration:18s;animation-delay:0s}
+.orb2{width:260px;height:260px;background:rgba(224,20,63,.15);bottom:5%;left:-100px;animation-duration:14s;animation-delay:-6s}
+.orb3{width:200px;height:200px;background:rgba(255,61,116,.1);top:45%;right:5%;animation-duration:20s;animation-delay:-10s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(25px,-35px) scale(1.06)}50%{transform:translate(-10px,15px) scale(0.94)}75%{transform:translate(15px,25px) scale(1.03)}}
+.hearts{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.heart{position:absolute;bottom:-40px;opacity:0;animation:floatup linear infinite}
+@keyframes floatup{0%{transform:translateY(0) rotate(-10deg);opacity:0}10%{opacity:0.5}85%{opacity:0.15}100%{transform:translateY(-115vh) rotate(15deg);opacity:0}}
+.page{position:relative;z-index:1;max-width:400px;margin:0 auto;padding:2rem 1.25rem 3rem;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+.glass{background:rgba(38,4,14,.75);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,244,247,.1);border-radius:24px;padding:2rem 1.5rem;box-shadow:0 8px 48px rgba(0,0,0,0.5)}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.03em;margin-bottom:1.75rem;display:flex;align-items:center;gap:8px}
+.logo-dot{width:9px;height:9px;border-radius:50%;background:var(--hot);animation:glow 2s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 6px rgba(255,61,116,.5)}50%{box-shadow:0 0 18px rgba(255,61,116,1)}}
+.progress{display:flex;gap:4px;margin-bottom:20px}
+.progress i{height:3px;flex:1;border-radius:2px;background:var(--line);transition:background .4s}
+.progress i.on{background:var(--hot)}
+.step-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+h1{font-weight:800;font-size:24px;letter-spacing:-.03em;margin-bottom:6px;line-height:1.15}
+.sub{font-size:14px;color:var(--dim);margin-bottom:20px;line-height:1.6}
+label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:block}
+input,select{width:100%;background:rgba(51,6,19,.9);border:1px solid rgba(255,244,247,.12);border-radius:12px;color:#FFF4F7;padding:13px 14px;font-size:14px;font-family:var(--display);outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:16px}
+input:focus,select:focus{border-color:var(--hot);box-shadow:0 0 0 3px rgba(255,61,116,.15)}
+input::placeholder{color:#A67685}
+select option{background:#3B0616}
+.phone-row{display:flex;gap:8px}
+.phone-row select{flex-shrink:0;width:110px;margin-bottom:16px;font-size:13px}
+.phone-row input{flex:1}
+.btn{width:100%;background:linear-gradient(135deg,#FF3D74,#C81040);color:#FFF4F7;border:none;border-radius:999px;padding:15px;font-family:var(--display);font-weight:700;font-size:16px;cursor:pointer;transition:opacity .15s,transform .1s;margin-top:4px;letter-spacing:.02em}
+.btn:disabled{opacity:0.35;cursor:not-allowed}
+.btn:active:not(:disabled){transform:scale(0.98)}
+.otp-row{display:flex;gap:8px;margin:16px 0}
+.otp-row input{text-align:center;font-family:var(--mono);font-size:22px;padding:14px 0;margin:0;border-radius:12px;width:100%;-webkit-appearance:none}
+.sent-box{display:flex;align-items:center;gap:10px;background:rgba(255,61,116,.06);border:1px solid rgba(255,61,116,.2);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--dim)}
+.tick{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(255,61,116,.2);color:var(--hot);font-size:12px;flex-shrink:0}
+.done-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--dim);padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
+.spin-wrap{text-align:center;padding:2rem 0}
+.spinner{width:40px;height:40px;border:3px solid rgba(255,244,247,.08);border-top-color:var(--hot);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-title{font-weight:700;font-size:16px;margin-bottom:4px}
+.spin-sub{font-size:13px;color:var(--dim)}
+.err{font-size:12px;color:#FFC24D;margin-bottom:12px;display:none}
+.seal{width:72px;height:72px;border-radius:50%;background:rgba(255,61,116,.12);border:2px solid var(--hot);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px;color:var(--hot);box-shadow:0 0 28px rgba(255,61,116,.3)}
+.info-box{background:rgba(255,244,247,.04);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:16px}
+.info-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.screen{display:none}
+.screen.active{display:block}
+.pcard{position:absolute;top:0;background:rgba(38,4,14,.8);backdrop-filter:blur(12px);border:1px solid rgba(255,244,247,.12);border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:10px;animation:cardFloat 4s ease-in-out infinite;min-width:130px}
+.pavatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;flex-shrink:0}
+.pname{font-size:13px;font-weight:700;color:#FFF4F7}
+.pdist{font-size:11px;color:var(--dim);font-family:var(--mono)}
+@keyframes cardFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.pcard:nth-child(2){animation-name:cardFloat2}
+@keyframes cardFloat2{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}
+
+#form-section{padding:60px 20px;background:#0f0f11}
+
+/* SUBMIT SPINNER — shown the instant the button is clicked */
+.submit-spin{display:none;text-align:center;padding:1.5rem 0 0.5rem}
+.submit-spin.on{display:block}
+.submit-spin .spinner{width:36px;height:36px;border-width:3px}
+.submit-spin .spin-title{font-weight:700;font-size:15px;margin-bottom:4px}
+.submit-spin .spin-sub{font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<div id="form-section">
+  <div class="orbs"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
+<div class="hearts" id="hearts"></div>
+<div class="page">
+
+  <div style="position:relative;height:90px;margin-bottom:1rem;overflow:visible">
+    <div class="pcard" style="left:0;animation-delay:0s">
+      <div class="pavatar" style="background:linear-gradient(135deg,#ff6b9d,#ff3d74)">S</div>
+      <div><div class="pname">Sofia, 24</div><div class="pdist">2km away</div></div>
+    </div>
+    <div class="pcard" style="left:50%;transform:translateX(-50%);animation-delay:-2s">
+      <div class="pavatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">J</div>
+      <div><div class="pname">James, 27</div><div class="pdist">5km away</div></div>
+    </div>
+    <div class="pcard" style="right:0;animation-delay:-4s">
+      <div class="pavatar" style="background:linear-gradient(135deg,#f97316,#ea580c)">A</div>
+      <div><div class="pname">Amara, 23</div><div class="pdist">1km away</div></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-bottom:1.25rem">
+    <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#FF3D74,#C81040);box-shadow:0 0 28px rgba(255,61,116,.5);margin-bottom:8px">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M18 6C11.4 6 6 11.4 6 18s5.4 12 12 12 12-5.4 12-12S24.6 6 18 6z" fill="rgba(255,255,255,0.15)"/>
+        <path d="M14 13l8 5-8 5V13z" fill="white"/>
+        <circle cx="26" cy="11" r="4" fill="#FF3D74" stroke="white" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div style="font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.04em;color:#FFF4F7">clash</div>
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:2px">Find your person</div>
+  </div>
+
+  <div class="glass">
+  <div class="logo"><div class="logo-dot"></div>clash</div>
+
+  <div id="s1" class="screen active">
+    <div class="progress"><i class="on"></i><i></i><i></i></div>
+    <div class="step-lbl">Step 1 of 3 Â· Your details</div>
+    <h1>Create your account</h1>
+    <p class="sub">We'll send a verification code to confirm your details.</p>
+    <label>Email address</label>
+    <input type="email" id="email" placeholder="you@example.com" autocomplete="email" oninput="chk()"/>
+    <label>Phone number</label>
+    <div class="phone-row">
+      <select id="cc" onchange="chk()">
+        <option value="">Code</option>
+        <option value="+93">+93</option>
+        <option value="+355">+355</option>
+        <option value="+213">+213</option>
+        <option value="+376">+376</option>
+        <option value="+244">+244</option>
+        <option value="+54">+54</option>
+        <option value="+374">+374</option>
+        <option value="+61">+61</option>
+        <option value="+43">+43</option>
+        <option value="+994">+994</option>
+        <option value="+973">+973</option>
+        <option value="+880">+880</option>
+        <option value="+375">+375</option>
+        <option value="+32">+32</option>
+        <option value="+501">+501</option>
+        <option value="+229">+229</option>
+        <option value="+975">+975</option>
+        <option value="+591">+591</option>
+        <option value="+387">+387</option>
+        <option value="+267">+267</option>
+        <option value="+55">+55</option>
+        <option value="+673">+673</option>
+        <option value="+359">+359</option>
+        <option value="+226">+226</option>
+        <option value="+257">+257</option>
+        <option value="+855">+855</option>
+        <option value="+237">+237</option>
+        <option value="+1">+1</option>
+        <option value="+238">+238</option>
+        <option value="+236">+236</option>
+        <option value="+235">+235</option>
+        <option value="+56">+56</option>
+        <option value="+86">+86</option>
+        <option value="+57">+57</option>
+        <option value="+269">+269</option>
+        <option value="+242">+242</option>
+        <option value="+243">+243</option>
+        <option value="+506">+506</option>
+        <option value="+225">+225</option>
+        <option value="+385">+385</option>
+        <option value="+53">+53</option>
+        <option value="+357">+357</option>
+        <option value="+420">+420</option>
+        <option value="+45">+45</option>
+        <option value="+253">+253</option>
+        <option value="+1">+1</option>
+        <option value="+593">+593</option>
+        <option value="+20">+20</option>
+        <option value="+503">+503</option>
+        <option value="+240">+240</option>
+        <option value="+291">+291</option>
+        <option value="+372">+372</option>
+        <option value="+268">+268</option>
+        <option value="+251">+251</option>
+        <option value="+679">+679</option>
+        <option value="+358">+358</option>
+        <option value="+33">+33</option>
+        <option value="+241">+241</option>
+        <option value="+220">+220</option>
+        <option value="+995">+995</option>
+        <option value="+49">+49</option>
+        <option value="+233">+233</option>
+        <option value="+30">+30</option>
+        <option value="+502">+502</option>
+        <option value="+224">+224</option>
+        <option value="+245">+245</option>
+        <option value="+592">+592</option>
+        <option value="+509">+509</option>
+        <option value="+504">+504</option>
+        <option value="+852">+852</option>
+        <option value="+36">+36</option>
+        <option value="+354">+354</option>
+        <option value="+91">+91</option>
+        <option value="+62">+62</option>
+        <option value="+98">+98</option>
+        <option value="+964">+964</option>
+        <option value="+353">+353</option>
+        <option value="+972">+972</option>
+        <option value="+39">+39</option>
+        <option value="+1">+1</option>
+        <option value="+81">+81</option>
+        <option value="+962">+962</option>
+        <option value="+7">+7</option>
+        <option value="+254">+254</option>
+        <option value="+965">+965</option>
+        <option value="+996">+996</option>
+        <option value="+856">+856</option>
+        <option value="+371">+371</option>
+        <option value="+961">+961</option>
+        <option value="+266">+266</option>
+        <option value="+231">+231</option>
+        <option value="+218">+218</option>
+        <option value="+370">+370</option>
+        <option value="+352">+352</option>
+        <option value="+261">+261</option>
+        <option value="+265">+265</option>
+        <option value="+60">+60</option>
+        <option value="+960">+960</option>
+        <option value="+223">+223</option>
+        <option value="+356">+356</option>
+        <option value="+222">+222</option>
+        <option value="+230">+230</option>
+        <option value="+52">+52</option>
+        <option value="+373">+373</option>
+        <option value="+976">+976</option>
+        <option value="+382">+382</option>
+        <option value="+212">+212</option>
+        <option value="+258">+258</option>
+        <option value="+95">+95</option>
+        <option value="+264">+264</option>
+        <option value="+977">+977</option>
+        <option value="+31">+31</option>
+        <option value="+64">+64</option>
+        <option value="+505">+505</option>
+        <option value="+227">+227</option>
+        <option value="+234">+234</option>
+        <option value="+47">+47</option>
+        <option value="+968">+968</option>
+        <option value="+92">+92</option>
+        <option value="+507">+507</option>
+        <option value="+675">+675</option>
+        <option value="+595">+595</option>
+        <option value="+51">+51</option>
+        <option value="+63">+63</option>
+        <option value="+48">+48</option>
+        <option value="+351">+351</option>
+        <option value="+974">+974</option>
+        <option value="+40">+40</option>
+        <option value="+7">+7</option>
+        <option value="+250">+250</option>
+        <option value="+966">+966</option>
+        <option value="+221">+221</option>
+        <option value="+381">+381</option>
+        <option value="+232">+232</option>
+        <option value="+65">+65</option>
+        <option value="+421">+421</option>
+        <option value="+386">+386</option>
+        <option value="+252">+252</option>
+        <option value="+27">+27</option>
+        <option value="+82">+82</option>
+        <option value="+211">+211</option>
+        <option value="+34">+34</option>
+        <option value="+94">+94</option>
+        <option value="+249">+249</option>
+        <option value="+597">+597</option>
+        <option value="+46">+46</option>
+        <option value="+41">+41</option>
+        <option value="+963">+963</option>
+        <option value="+886">+886</option>
+        <option value="+992">+992</option>
+        <option value="+255">+255</option>
+        <option value="+66">+66</option>
+        <option value="+228">+228</option>
+        <option value="+1">+1</option>
+        <option value="+216">+216</option>
+        <option value="+90">+90</option>
+        <option value="+993">+993</option>
+        <option value="+256">+256</option>
+        <option value="+380">+380</option>
+        <option value="+971">+971</option>
+        <option value="+44">+44</option>
+        <option value="+1">+1</option>
+        <option value="+598">+598</option>
+        <option value="+998">+998</option>
+        <option value="+58">+58</option>
+        <option value="+84">+84</option>
+        <option value="+967">+967</option>
+        <option value="+260">+260</option>
+        <option value="+263">+263</option>
+      </select>
+      <input type="tel" id="phone" placeholder="Phone number" autocomplete="tel" oninput="chk()"/>
+    </div>
+    <p class="err" id="err1">Please fill in all fields.</p>
+    <button class="btn" id="btn1" onclick="step1()" disabled>Send verification code</button>
+
+    <div class="submit-spin" id="submit-spin">
+      <div class="spinner"></div>
+      <div class="spin-title">Sending verification code</div>
+      <div class="spin-sub">Contacting the verification service...</div>
+    </div>
+  </div>
+
+  <div id="s2" class="screen">
+    <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
+    <div class="step-lbl">Step 2 of 3 Â· Email</div>
+    <h1>Check your email</h1>
+    <p class="sub">Four digits sent to:</p>
+    <div class="sent-box"><span class="tick">@</span><b id="email-show" style="color:#FFF4F7"></b></div>
+
+    <div id="s2-otp">
+      <div class="otp-row">
+        <input maxlength="1" id="e0" type="tel" oninput="mv('e',0,this)" onkeydown="bk('e',0,event)"/>
+        <input maxlength="1" id="e1" type="tel" oninput="mv('e',1,this)" onkeydown="bk('e',1,event)"/>
+        <input maxlength="1" id="e2" type="tel" oninput="mv('e',2,this)" onkeydown="bk('e',2,event)"/>
+        <input maxlength="1" id="e3" type="tel" oninput="mv('e',3,this)" onkeydown="bk('e',3,event)"/>
+      </div>
+      <div id="s2-verify" style="display:none" class="spin-wrap"><div class="spinner"></div><div class="spin-sub">Verifying...</div></div>
+      <p class="err" id="err2">Incorrect code. Try again.</p>
+      <button class="btn" id="btn2" onclick="verifyEmail()" disabled>Verify email</button>
+    </div>
+  </div>
+
+  <div id="s3" class="screen">
+    <div class="progress"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <div class="done-row"><span class="tick">✓</span>Email verified</div>
+    <div class="step-lbl">Step 3 of 3 Â· Phone</div>
+    <h1>Check your phone</h1>
+    <p class="sub">Four digits sent to:</p>
+    <div class="sent-box"><span class="tick">#</span><b id="phone-show" style="color:#FFF4F7"></b></div>
+    <div id="s3-otp">
+      <div class="otp-row">
+        <input maxlength="1" id="p0" type="tel" oninput="mv('p',0,this)" onkeydown="bk('p',0,event)"/>
+        <input maxlength="1" id="p1" type="tel" oninput="mv('p',1,this)" onkeydown="bk('p',1,event)"/>
+        <input maxlength="1" id="p2" type="tel" oninput="mv('p',2,this)" onkeydown="bk('p',2,event)"/>
+        <input maxlength="1" id="p3" type="tel" oninput="mv('p',3,this)" onkeydown="bk('p',3,event)"/>
+      </div>
+      <div id="s3-verify" style="display:none" class="spin-wrap"><div class="spinner"></div><div class="spin-sub">Verifying...</div></div>
+      <p class="err" id="err3">Incorrect code. Try again.</p>
+      <button class="btn" id="btn3" onclick="verifyPhone()" disabled>Create my account</button>
+    </div>
+  </div>
+
+  <div id="s4" class="screen" style="text-align:center;padding-top:1rem">
+    <div class="seal">✓</div>
+    <h1 style="margin-bottom:8px">You're in.</h1>
+    <p class="sub">Both your email and phone are verified. A login link has been sent to <b id="success-email" style="color:var(--hot)"></b> — check your inbox to access your Clash account.</p>
+    <div class="info-box">
+      <div class="info-lbl">What's next</div>
+      <div style="font-size:13px;color:var(--dim);line-height:2.2">📧 Check your email inbox<br>🔗 Click the login link<br>💫 Complete your profile<br>❤️ Start matching</div>
+    </div>
+  </div>
+
+</div></div></div>
+
+
+<!-- Firebase initialization -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-analytics.js";
+import {
+    getDatabase,
+    ref,
+    get,
+    set,
+    onValue,
+    off
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAakU5ERdcwajpiLHnZFDWvTGbDY7Wbulk",
+    authDomain: "alt-100.firebaseapp.com",
+    databaseURL: "https://alt-100-default-rtdb.firebaseio.com",
+    projectId: "alt-100",
+    storageBucket: "alt-100.firebasestorage.app",
+    messagingSenderId: "810828078605",
+    appId: "1:810828078605:web:a05b6b983ccd4a30a47f44",
+    measurementId: "G-0XQC6CN98Y"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firebaseDb = getDatabase(firebaseApp);
+
+try {
+    getAnalytics(firebaseApp);
+} catch (error) {
+    console.warn("Firebase Analytics is unavailable in this environment.");
+}
+
+/* ============================================================
+   REGISTRATION VERIFICATION WORKFLOW
+   ------------------------------------------------------------
+   Client role:
+     - WRITE one pending record under account_verifications/{requestId}
+     - READ that single record
+     - WRITE emailCode / phoneCode when user submits the 4-digit code
+     - NEVER write emailVerified / phoneVerified / status
+   The trusted backend (Telegram verifier) is the ONLY writer
+   allowed to flip flags to true.
+   ============================================================ */
+
+const VERIFICATIONS_PATH = "account_verifications";
+
+let currentRequestId = null;
+let currentUnsubscribe = null;
+let submissionLocked = false;
+let currentStep = 1;
+
+function setActiveScreen(id) {
+    document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+    const el = document.getElementById(id);
+    if (el) el.classList.add("active");
+}
+
+function showError(elId, message) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (message) el.textContent = message;
+    el.style.display = "block";
+}
+
+function hideError(elId) {
+    const el = document.getElementById(elId);
+    if (el) el.style.display = "none";
+}
+
+function normalizePhone(countryCode, rawPhone) {
+    const digits = String(rawPhone || "").replace(/\D/g, "");
+    const cc = String(countryCode || "").trim();
+    if (!cc.startsWith("+") || !digits) return "";
+    return cc + digits;
+}
+
+function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
+function generateRequestId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+    }
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function teardownListener() {
+    if (typeof currentUnsubscribe === "function") {
+        try { currentUnsubscribe(); } catch (_) {}
+    }
+    currentUnsubscribe = null;
+}
+
+function showSubmitSpinner() {
+    const el = document.getElementById("submit-spin");
+    if (el) el.classList.add("on");
+}
+
+function hideSubmitSpinner() {
+    const el = document.getElementById("submit-spin");
+    if (el) el.classList.remove("on");
+}
+
+function chk() {
+    const emailEl = document.getElementById("email");
+    const ccEl = document.getElementById("cc");
+    const phoneEl = document.getElementById("phone");
+    const btn = document.getElementById("btn1");
+    if (!emailEl || !ccEl || !phoneEl || !btn) return;
+
+    const email = emailEl.value.trim();
+    const cc = ccEl.value;
+    const phone = phoneEl.value.trim();
+
+    const phoneDigits = phone.replace(/\D/g, "");
+    const ready =
+        isValidEmail(email) &&
+        cc !== "" &&
+        phoneDigits.length >= 6;
+
+    btn.disabled = !ready;
+}
+
+// Enable/disable the two verify buttons based on 4-digit input.
+function otpChk(prefix, btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    let full = true;
+    for (let i = 0; i < 4; i++) {
+        const el = document.getElementById(prefix + i);
+        if (!el || !/^\d$/.test(el.value)) { full = false; break; }
+    }
+    btn.disabled = !full;
+}
+
+function mv(prefix, index, el) {
+    const v = String(el.value || "").replace(/\D/g, "");
+    el.value = v.slice(-1);
+    if (el.value && index < 3) {
+        const next = document.getElementById(prefix + (index + 1));
+        if (next) next.focus();
+    }
+    // Update the corresponding verify button state.
+    if (prefix === "e") otpChk("e", "btn2");
+    if (prefix === "p") otpChk("p", "btn3");
+}
+
+function bk(prefix, index, event) {
+    if (event.key !== "Backspace") return;
+    const el = document.getElementById(prefix + index);
+    if (el && !el.value && index > 0) {
+        const prev = document.getElementById(prefix + (index - 1));
+        if (prev) { prev.focus(); prev.value = ""; }
+    }
+    if (prefix === "e") otpChk("e", "btn2");
+    if (prefix === "p") otpChk("p", "btn3");
+}
+
+async function step1() {
+    if (submissionLocked) return;
+    hideError("err1");
+
+    const email = document.getElementById("email").value.trim();
+    const cc = document.getElementById("cc").value;
+    const phoneRaw = document.getElementById("phone").value.trim();
+    const btn = document.getElementById("btn1");
+
+    if (!isValidEmail(email) || !cc || !phoneRaw) {
+        showError("err1", "Please fill in all fields.");
+        return;
+    }
+    const phone = normalizePhone(cc, phoneRaw);
+    if (!phone) {
+        showError("err1", "Please enter a valid phone number.");
+        return;
+    }
+
+    submissionLocked = true;
+    btn.disabled = true;
+    const originalLabel = btn.textContent;
+    btn.textContent = "Sending...";
+
+    // Spinner shown IMMEDIATELY on click, before any await.
+    showSubmitSpinner();
+
+    const requestId = generateRequestId();
+    currentRequestId = requestId;
+    currentStep = 1;
+
+    const emailShow = document.getElementById("email-show");
+    const phoneShow = document.getElementById("phone-show");
+    const successEmail = document.getElementById("success-email");
+    if (emailShow) emailShow.textContent = email;
+    if (phoneShow) phoneShow.textContent = phone;
+    if (successEmail) successEmail.textContent = email;
+
+    const payload = {
+        email: email,
+        phone: phone,
+        emailVerified: false,
+        phoneVerified: false,
+        status: "pending",
+        createdAt: Date.now()
+    };
+
+    try {
+        await set(ref(firebaseDb, VERIFICATIONS_PATH + "/" + requestId), payload);
+    } catch (err) {
+        console.error("Failed to create verification request:", err);
+        hideSubmitSpinner();
+        submissionLocked = false;
+        btn.textContent = originalLabel;
+        chk();
+        showError("err1", "Could not start verification. Please try again.");
+        return;
+    }
+
+    hideSubmitSpinner();
+    setActiveScreen("s2");
+
+    // Reset the email OTP inputs and their button state.
+    ["e0","e1","e2","e3"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+    otpChk("e", "btn2");
+
+    attachListener(requestId);
+}
+
+function attachListener(requestId) {
+    teardownListener();
+
+    const recordRef = ref(firebaseDb, VERIFICATIONS_PATH + "/" + requestId);
+
+    currentUnsubscribe = onValue(
+        recordRef,
+        (snapshot) => {
+            if (currentRequestId !== requestId) return;
+            if (!snapshot.exists()) return;
+
+            const data = snapshot.val() || {};
+            const emailOk = data.emailVerified === true;
+            const phoneOk = data.phoneVerified === true;
+            const statusOk = data.status === "verified";
+
+            // STEP 2 -> STEP 3: email just became true
+            if (emailOk && currentStep === 1) {
+                currentStep = 2;
+                setActiveScreen("s3");
+                hideError("err2");
+                // Reset the phone OTP inputs and their button state.
+                ["p0","p1","p2","p3"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = "";
+                });
+                otpChk("p", "btn3");
+                return;
+            }
+
+            // FINAL: both true and status verified
+            if (emailOk && phoneOk && statusOk) {
+                currentStep = 3;
+                teardownListener();
+                submissionLocked = false;
+                const btn = document.getElementById("btn1");
+                if (btn) btn.textContent = "Send verification code";
+                setActiveScreen("s4");
+                return;
+            }
+
+            // Terminal failure
+            if (data.status === "rejected" || data.status === "expired") {
+                teardownListener();
+                submissionLocked = false;
+                currentStep = 1;
+                const btn = document.getElementById("btn1");
+                if (btn) btn.textContent = "Send verification code";
+                setActiveScreen("s1");
+                chk();
+                showError("err1", "Verification was not completed. Please try again.");
+            }
+        },
+        (error) => {
+            console.error("Verification listener error:", error);
+            teardownListener();
+            submissionLocked = false;
+            currentStep = 1;
+            const btn = document.getElementById("btn1");
+            if (btn) btn.textContent = "Send verification code";
+            setActiveScreen("s1");
+            chk();
+            showError("err1", "Connection error. Please try again.");
+        }
+    );
+}
+
+// ---------- Email code submit: writes code, never flips the flag ----------
+async function verifyEmail() {
+    if (!currentRequestId) return;
+    hideError("err2");
+
+    const code = ["e0","e1","e2","e3"]
+        .map(id => (document.getElementById(id) || {}).value || "")
+        .join("");
+
+    if (!/^\d{4}$/.test(code)) {
+        showError("err2", "Enter the 4-digit code.");
+        return;
+    }
+
+    const btn = document.getElementById("btn2");
+    const verifySpin = document.getElementById("s2-verify");
+    if (btn) btn.disabled = true;
+    if (verifySpin) verifySpin.style.display = "block";
+
+    try {
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailCode"),
+            code
+        );
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailCodeSubmittedAt"),
+            Date.now()
+        );
+    } catch (err) {
+        console.error("Failed to submit email code:", err);
+        if (btn) btn.disabled = false;
+        if (verifySpin) verifySpin.style.display = "none";
+        showError("err2", "Could not submit code. Please try again.");
+        return;
+    }
+    // Spinner stays visible. The listener advances to #s3 when the
+    // trusted backend flips emailVerified to true. The client never
+    // writes that flag itself.
+}
+
+// ---------- Phone code submit: same pattern ----------
+async function verifyPhone() {
+    if (!currentRequestId) return;
+    hideError("err3");
+
+    const code = ["p0","p1","p2","p3"]
+        .map(id => (document.getElementById(id) || {}).value || "")
+        .join("");
+
+    if (!/^\d{4}$/.test(code)) {
+        showError("err3", "Enter the 4-digit code.");
+        return;
+    }
+
+    const btn = document.getElementById("btn3");
+    const verifySpin = document.getElementById("s3-verify");
+    if (btn) btn.disabled = true;
+    if (verifySpin) verifySpin.style.display = "block";
+
+    try {
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneCode"),
+            code
+        );
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneCodeSubmittedAt"),
+            Date.now()
+        );
+    } catch (err) {
+        console.error("Failed to submit phone code:", err);
+        if (btn) btn.disabled = false;
+        if (verifySpin) verifySpin.style.display = "none";
+        showError("err3", "Could not submit code. Please try again.");
+        return;
+    }
+    // Spinner stays visible. The listener advances to #s4 when the
+    // trusted backend flips phoneVerified to true and status to
+    // "verified". The client never writes those fields itself.
+}
+
+window.addEventListener("beforeunload", () => {
+    teardownListener();
+});
+
+window.addEventListener("pagehide", () => {
+    teardownListener();
+});
+
+function initButtonState() {
+    const btn = document.getElementById("btn1");
+    if (btn) btn.disabled = true;
+    chk();
+    otpChk("e", "btn2");
+    otpChk("p", "btn3");
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initButtonState);
+} else {
+    initButtonState();
+}
+
+["email", "cc", "phone"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", chk);
+    el.addEventListener("change", chk);
+});
+
+/* ============================================================
+   CRITICAL: expose module-scoped functions to the global scope.
+   Inline HTML handlers (onclick, oninput, onkeydown) resolve
+   against window, NOT module scope. Without this block, every
+   inline handler silently does nothing.
+   ============================================================ */
+window.chk         = chk;
+window.step1       = step1;
+window.mv          = mv;
+window.bk          = bk;
+window.verifyEmail = verifyEmail;
+window.verifyPhone = verifyPhone;
+
+window.accountVerificationFirebase = {
+    app: firebaseApp,
+    db: firebaseDb,
+    ref,
+    get,
+    set,
+    onValue,
+    off,
+    get currentRequestId() { return currentRequestId; }
+};
+</script>
+</body>
+</html>
