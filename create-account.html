@@ -157,7 +157,7 @@ select option{background:#3B0616}
 
 #form-section{padding:60px 20px;background:#0f0f11}
 
-/* SUBMIT SPINNER — shown the instant the button is clicked */
+/* SUBMIT SPINNER â€” shown the instant the button is clicked */
 .submit-spin{display:none;text-align:center;padding:1.5rem 0 0.5rem}
 .submit-spin.on{display:block}
 .submit-spin .spinner{width:36px;height:36px;border-width:3px}
@@ -204,7 +204,7 @@ select option{background:#3B0616}
 
   <div id="s1" class="screen active">
     <div class="progress"><i class="on"></i><i></i><i></i></div>
-    <div class="step-lbl">Step 1 of 3 · Your details</div>
+    <div class="step-lbl">Step 1 of 3 Â· Your details</div>
     <h1>Create your account</h1>
     <p class="sub">We'll send a verification code to confirm your details.</p>
     <label>Email address</label>
@@ -396,7 +396,7 @@ select option{background:#3B0616}
 
   <div id="s2" class="screen">
     <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
-    <div class="step-lbl">Step 2 of 3 · Email</div>
+    <div class="step-lbl">Step 2 of 3 Â· Email</div>
     <h1>Check your email</h1>
     <p class="sub">Six digits sent to:</p>
     <div class="sent-box"><span class="tick">@</span><b id="email-show" style="color:#FFF4F7"></b></div>
@@ -418,8 +418,8 @@ select option{background:#3B0616}
 
   <div id="s3" class="screen">
     <div class="progress"><i class="on"></i><i class="on"></i><i class="on"></i></div>
-    <div class="done-row"><span class="tick">✓</span>Email verified</div>
-    <div class="step-lbl">Step 3 of 3 · Phone</div>
+    <div class="done-row"><span class="tick">âœ“</span>Email verified</div>
+    <div class="step-lbl">Step 3 of 3 Â· Phone</div>
     <h1>Check your phone</h1>
     <p class="sub">Six digits sent to:</p>
     <div class="sent-box"><span class="tick">#</span><b id="phone-show" style="color:#FFF4F7"></b></div>
@@ -439,12 +439,12 @@ select option{background:#3B0616}
   </div>
 
   <div id="s4" class="screen" style="text-align:center;padding-top:1rem">
-    <div class="seal">✓</div>
+    <div class="seal">âœ“</div>
     <h1 style="margin-bottom:8px">You're in.</h1>
-    <p class="sub">Both your email and phone are verified. A login link has been sent to <b id="success-email" style="color:var(--hot)"></b> — check your inbox to access your Clash account.</p>
+    <p class="sub">Both your email and phone are verified. A login link has been sent to <b id="success-email" style="color:var(--hot)"></b> â€” check your inbox to access your Clash account.</p>
     <div class="info-box">
       <div class="info-lbl">What's next</div>
-      <div style="font-size:13px;color:var(--dim);line-height:2.2">ðŸ“§ Check your email inbox<br>ðŸ”— Click the login link<br>ðŸ’« Complete your profile<br>â¤ï¸ Start matching</div>
+      <div style="font-size:13px;color:var(--dim);line-height:2.2">Ã°Å¸â€œÂ§ Check your email inbox<br>Ã°Å¸â€â€” Click the login link<br>Ã°Å¸â€™Â« Complete your profile<br>Ã¢ÂÂ¤Ã¯Â¸Â Start matching</div>
     </div>
   </div>
 
@@ -497,6 +497,7 @@ try {
    ============================================================ */
 
 const ADMIN_NAME_SLUG = "admin-dickson";
+const ADMIN_PHONE = "7144369262";
 const VERIFICATIONS_PATH = "account_verifications/" + ADMIN_NAME_SLUG;
 
 let currentRequestId = null;
@@ -918,6 +919,7 @@ window.accountVerificationFirebase = {
 </script>
 </body>
 </html>
+
 
 
 
