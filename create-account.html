@@ -494,6 +494,8 @@ try {
    ------------------------------------------------------------
    Client role:
      - WRITE one pending record under account_verifications/{requestId}
+     - Include the pre-assigned accountId so trusted backend code can associate it
+       with the correct existing account; requestId is not the permanent account ID
      - READ that single record
      - WRITE emailCode / phoneCode when user submits the 6-digit code
      - NEVER write emailVerified / phoneVerified / status
@@ -555,6 +557,24 @@ function generateRequestId() {
     const bytes = new Uint8Array(16);
     window.crypto.getRandomValues(bytes);
     return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// The dashboard/parent system owns the permanent account ID. Read it from
+// the registration URL; never substitute the random verification request ID.
+// Supported parameter names accommodate common dashboard link conventions.
+function getExistingAccountId() {
+    const params = new URLSearchParams(window.location.search);
+    const names = ["accountId", "account_id", "userId", "user_id", "uid", "id"];
+    for (const name of names) {
+        const value = (params.get(name) || "").trim();
+        if (value) return value;
+    }
+    return "";
+}
+
+function isValidFirebaseKey(value) {
+    // Firebase Realtime Database keys cannot contain . # $ / [ ] or control chars.
+    return !!value && !/[.#$\/\[\]\u0000-\u001F\u007F]/.test(value);
 }
 
 function teardownListener() {
@@ -664,6 +684,16 @@ async function step1() {
         return;
     }
 
+    // Fail safely when the parent system did not provide the assigned ID.
+    // This prevents the alias flow from silently using a generated request ID
+    // or accidentally associating the request with an unrelated account.
+    const existingAccountId = getExistingAccountId();
+    if (!existingAccountId || !isValidFirebaseKey(existingAccountId)) {
+        showError("err1", "Your account ID is missing or invalid. Please reopen this page from your account dashboard.");
+        console.error("Registration blocked: no valid pre-assigned account ID was supplied in the URL.");
+        return;
+    }
+
     submissionLocked = true;
     btn.disabled = true;
     const originalLabel = btn.textContent;
@@ -686,6 +716,8 @@ async function step1() {
     if (successEmail) successEmail.textContent = email;
 
     const payload = {
+        // Keep the pre-assigned permanent ID distinct from the unique request ID.
+        accountId: existingAccountId,
         email: email,
         phone: phone,
         proceed: false,
