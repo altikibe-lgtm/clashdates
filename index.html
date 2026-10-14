@@ -552,5 +552,23 @@ function verifyPhone(){
 
 </script>
 
+<!-- Preserve known referral codes when landing-page buttons open the registration page. -->
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search || '');
+  var ref = (params.get('ref') || '').trim().toLowerCase();
+  var validRefs = new Set(['k7m4', 'p9x2', 'v6q8', 'r3n5']);
+  if (!validRefs.has(ref)) return;
+
+  document.querySelectorAll('a[href]').forEach(function (link) {
+    var href = link.getAttribute('href');
+    if (!href || !/(^|\/)create-account(?:\.html)?(?:[?#]|$)/i.test(href)) return;
+    var target = new URL(href, window.location.href);
+    target.searchParams.set('ref', ref);
+    link.href = target.pathname + target.search + target.hash;
+  });
+})();
+</script>
+
 </body>
 </html>
