@@ -1,0 +1,5 @@
+
+routes:
+  - type: rewrite
+    source: /create-account
+    destination: /create-account.html
